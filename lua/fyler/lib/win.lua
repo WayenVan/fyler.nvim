@@ -201,6 +201,30 @@ function Win:config()
   return winconfig
 end
 
+local function unique_buf_name(desired_name)
+  local existing = {}
+  for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+    local name = vim.api.nvim_buf_get_name(bufnr)
+    if name ~= "" then existing[name] = true end
+  end
+
+  if not existing[desired_name] then return desired_name end
+
+  -- 如果存在，则生成带随机后缀的新名称
+  local name, i
+  repeat
+    i = math.random(1000, 9999)
+    name = string.format("%s_%d", desired_name, i)
+  until not existing[name]
+  return name
+end
+
+local function buf_set_unique_name(bufnr, desired_name)
+  local final_name = unique_buf_name(desired_name)
+  vim.api.nvim_buf_set_name(bufnr, final_name)
+  return final_name
+end
+
 function Win:show()
   if self:has_valid_winid() then return end
 
@@ -208,7 +232,7 @@ function Win:show()
   self.old_bufnr = api.nvim_get_current_buf()
   self.old_winid = api.nvim_get_current_win()
   self.bufnr = api.nvim_create_buf(false, true)
-  if self.bufname then api.nvim_buf_set_name(self.bufnr, self.bufname) end
+  -- if self.bufname then api.nvim_buf_set_name(self.bufnr, self.bufname) end
 
   local win_config = self:config()
   if win_config.split and (win_config.split:match("_all$") or win_config.split:match("_most$")) then
